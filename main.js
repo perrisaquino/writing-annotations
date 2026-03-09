@@ -169,14 +169,17 @@ class AnnotationInputModal extends Modal {
       });
       textarea.value = this.initialValue;
       textarea.style.maxHeight = '160px';
-      textarea.style.overflowY = 'auto';
 
-      textarea.addEventListener('input', () => {
+      const resizeTextarea = () => {
         textarea.style.height = 'auto';
         const capped = Math.min(textarea.scrollHeight, 160);
         textarea.style.height = `${capped}px`;
         textarea.style.overflowY = textarea.scrollHeight > 160 ? 'auto' : 'hidden';
-      });
+      };
+
+      textarea.addEventListener('input', resizeTextarea);
+      // Run immediately so pre-filled values and pastes are capped on load
+      requestAnimationFrame(resizeTextarea);
 
       const submit = () => {
         const val = textarea.value.trim();
