@@ -168,10 +168,14 @@ class AnnotationInputModal extends Modal {
         attr: { placeholder: 'What needs to change, stand out, or get done?', rows: '3' }
       });
       textarea.value = this.initialValue;
+      textarea.style.maxHeight = '160px';
+      textarea.style.overflowY = 'auto';
 
       textarea.addEventListener('input', () => {
         textarea.style.height = 'auto';
-        textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+        const capped = Math.min(textarea.scrollHeight, 160);
+        textarea.style.height = `${capped}px`;
+        textarea.style.overflowY = textarea.scrollHeight > 160 ? 'auto' : 'hidden';
       });
 
       const submit = () => {
