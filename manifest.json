@@ -1,0 +1,10 @@
+{
+  "id": "writing-annotations",
+  "name": "Writing Annotations",
+  "version": "1.2.5",
+  "minAppVersion": "0.16.3",
+  "description": "Highlight text, leave editing comments, and export them for LLM review.",
+  "author": "Perris Aquino",
+  "authorUrl": "https://github.com/perrisaquino",
+  "isDesktopOnly": false
+}
