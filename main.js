@@ -79,6 +79,13 @@ function buildSingleExport(ann) {
   return `"${ann.text}"\n\nEdit needed: ${ann.note}`;
 }
 
+// Returns a single-line anchor from any selection (max 120 chars).
+// Used for ==highlight== wrapping and frontmatter key — both require single-line text.
+function textAnchor(text) {
+  const firstLine = text.split('\n').map(l => l.trim()).find(l => l.length > 0) || text.trim();
+  return firstLine.length > 120 ? firstLine.slice(0, 120).trimEnd() + '…' : firstLine;
+}
+
 function buildLLMExport(filename, annotations) {
   const lines = [
     `# Writing Annotations — ${filename}`,
@@ -130,14 +137,33 @@ class AnnotationInputModal extends Modal {
       }
 
       contentEl.addClass('wa-modal-content');
+      // Flex column so button row is always pinned at bottom
+      Object.assign(contentEl.style, {
+        display:       'flex',
+        flexDirection: 'column',
+        maxHeight:     Platform.isMobile ? '72vh' : '80vh',
+        overflow:      'hidden'
+      });
 
       const isEditing = !!this.initialValue;
       contentEl.createEl('div', { cls: 'wa-modal-title', text: isEditing ? 'Edit Annotation' : 'Annotation' });
 
-      const preview = contentEl.createEl('div', { cls: 'wa-quoted-preview' });
-      preview.setText(`"${this.selectedText}"`);
+      // Scrollable body — preview + textarea scroll freely, buttons stay fixed
+      const scrollBody = contentEl.createEl('div');
+      Object.assign(scrollBody.style, {
+        overflowY: 'auto',
+        flex:      '1',
+        minHeight: '0'
+      });
 
-      const textarea = contentEl.createEl('textarea', {
+      const preview = scrollBody.createEl('div', { cls: 'wa-quoted-preview' });
+      // Show truncated preview so it never dominates the modal
+      const previewText = this.selectedText.length > 220
+        ? this.selectedText.slice(0, 220).trimEnd() + `… (${this.selectedText.length} chars selected)`
+        : this.selectedText;
+      preview.setText(`"${previewText}"`);
+
+      const textarea = scrollBody.createEl('textarea', {
         cls:  'wa-comment-input',
         attr: { placeholder: 'What needs to change, stand out, or get done?', rows: '3' }
       });
@@ -145,7 +171,7 @@ class AnnotationInputModal extends Modal {
 
       textarea.addEventListener('input', () => {
         textarea.style.height = 'auto';
-        textarea.style.height = `${textarea.scrollHeight}px`;
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 280)}px`;
       });
 
       const submit = () => {
@@ -161,9 +187,11 @@ class AnnotationInputModal extends Modal {
         setTimeout(() => { this.close(); this.onSubmit(val); }, 180);
       };
 
+      // Button row pinned outside scroll body — always visible
       let saveBtn;
       if (isEditing && this.onResolve) {
         const btnRow = contentEl.createEl('div', { cls: 'wa-btn-row' });
+        btnRow.style.flexShrink = '0';
         saveBtn = btnRow.createEl('button', { cls: 'wa-submit-btn', text: 'Save' });
         const resolveBtn = btnRow.createEl('button', { cls: 'wa-resolve-btn', text: 'Resolve ✓' });
         resolveBtn.addEventListener('click', () => {
@@ -172,11 +200,13 @@ class AnnotationInputModal extends Modal {
         });
       } else {
         const btnRow = contentEl.createEl('div', { cls: 'wa-btn-row' });
-        saveBtn = btnRow.createEl('button', { cls: 'wa-submit-btn', text: isEditing ? 'Save' : 'Save' });
+        btnRow.style.flexShrink = '0';
+        saveBtn = btnRow.createEl('button', { cls: 'wa-submit-btn', text: 'Save' });
       }
 
       if (!Platform.isMobile) {
-        contentEl.createEl('div', { cls: 'wa-hint', text: 'Ctrl/Cmd+Enter to save' });
+        const hint = contentEl.createEl('div', { cls: 'wa-hint', text: 'Ctrl/Cmd+Enter to save' });
+        hint.style.flexShrink = '0';
       }
 
       saveBtn.addEventListener('click', submit);
@@ -496,10 +526,23 @@ class WritingAnnotationsPlugin extends Plugin {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!view?.file) return;
 
+    // ==highlight== only works on a single line in Obsidian.
+    // For multiline / long selections, anchor to the first sentence/line.
+    const anchor    = textAnchor(selection);
+    const truncated = anchor !== selection.trim();
+
     const onSubmit = async (note) => {
-      editor.replaceSelection(`==${selection}==`);
-      await addAnnotation(this.app, view.file, selection, note);
-      new Notice('Annotation saved.');
+      if (truncated) {
+        // Highlight just the anchor at the start; leave the rest of the passage unhighlighted
+        const anchorRaw = anchor.endsWith('…') ? anchor.slice(0, -1) : anchor;
+        const rest = selection.trim().slice(anchorRaw.length);
+        editor.replaceSelection(`==${anchor}==${rest}`);
+        new Notice('Annotation saved. (First sentence highlighted — full passage spans multiple lines.)');
+      } else {
+        editor.replaceSelection(`==${anchor}==`);
+        new Notice('Annotation saved.');
+      }
+      await addAnnotation(this.app, view.file, anchor, note);
       this._refreshSidebar();
     };
 
