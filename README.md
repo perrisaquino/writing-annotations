@@ -8,7 +8,7 @@ An Obsidian plugin that lets you highlight text and leave inline editing comment
 - Annotated text is wrapped in `==highlights==` (native Obsidian highlighting)
 - Comments are stored in the note's YAML frontmatter — no external database, no extra files
 - A side panel shows all annotations for the current note
-- Export all annotations for LLM review (paste into ChatGPT, Claude, etc.)
+- Export all annotations for AI review (paste into any AI tool for editing feedback)
 
 ## Example frontmatter
 
