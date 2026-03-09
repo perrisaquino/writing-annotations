@@ -121,10 +121,10 @@
 /* ── Comment textarea ── */
 .wa-comment-input {
   width: 100%;
-  min-height: 70px;
-  max-height: 160px;
+  height: 150px;
   resize: none;
-  overflow-y: auto;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
   background: var(--background-primary);
   border: 1.5px solid var(--background-modifier-border);
   border-radius: var(--wa-r);

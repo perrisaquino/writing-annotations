@@ -168,18 +168,11 @@ class AnnotationInputModal extends Modal {
         attr: { placeholder: 'What needs to change, stand out, or get done?', rows: '3' }
       });
       textarea.value = this.initialValue;
-      textarea.style.maxHeight = '160px';
-
-      const resizeTextarea = () => {
-        textarea.style.height = 'auto';
-        const capped = Math.min(textarea.scrollHeight, 160);
-        textarea.style.height = `${capped}px`;
-        textarea.style.overflowY = textarea.scrollHeight > 160 ? 'auto' : 'hidden';
-      };
-
-      textarea.addEventListener('input', resizeTextarea);
-      // Run immediately so pre-filled values and pastes are capped on load
-      requestAnimationFrame(resizeTextarea);
+      // Fixed height — no auto-grow. Content scrolls inside the box.
+      textarea.style.height                  = '150px';
+      textarea.style.overflowY               = 'scroll';
+      textarea.style.webkitOverflowScrolling = 'touch';
+      textarea.style.resize                  = 'none';
 
       const submit = () => {
         const val = textarea.value.trim();
@@ -323,7 +316,7 @@ class FloatingToolbar {
     this._remove = this._remove.bind(this);
   }
 
-  show(x, y, editor, selection) {
+  show(x, y, editor, selection, from, to) {
     this._remove();
 
     const tb = document.createElement('div');
@@ -336,7 +329,8 @@ class FloatingToolbar {
       e.preventDefault();
       e.stopPropagation();
       this._remove();
-      this.plugin.startAnnotation(editor, selection);
+      // Pass pre-captured positions — by this point the editor selection may be cleared
+      this.plugin.startAnnotation(editor, selection, from, to);
     });
 
     const closeBtn = document.createElement('button');
@@ -529,16 +523,14 @@ class WritingAnnotationsPlugin extends Plugin {
     new AnnotationInputModal(this.app, selectedText, onSubmit, initialValue, onResolve).open();
   }
 
-  async startAnnotation(editor, selection) {
+  async startAnnotation(editor, selection, preFrom, preTo) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!view?.file) return;
 
-    // Capture cursor positions BEFORE opening the modal.
-    // The modal steals editor focus which clears the active selection —
-    // replaceSelection() would then fire into nothing and lose the user's note.
-    // replaceRange() with saved positions works regardless of focus state.
-    const from = editor.getCursor('from');
-    const to   = editor.getCursor('to');
+    // Use pre-captured positions if provided (toolbar path on mobile: selection is
+    // already cleared by the time this fires). Fall back to getCursor for menu/command paths.
+    const from = preFrom ?? editor.getCursor('from');
+    const to   = preTo   ?? editor.getCursor('to');
 
     // ==highlight== only works on a single line in Obsidian.
     // For multiline / long selections, anchor to the first sentence/line.
@@ -768,11 +760,18 @@ class WritingAnnotationsPlugin extends Plugin {
     // Mobile: pass rect.bottom so toolbar appears below selection (clear of iOS menu)
     // Desktop: pass rect.top so toolbar appears above selection
     const y = Platform.isMobile ? rect.bottom : rect.top;
+    // Capture positions NOW while the selection is still live.
+    // By the time the toolbar button fires, mobile may have cleared the editor selection.
+    const from = view.editor.getCursor('from');
+    const to   = view.editor.getCursor('to');
+
     this.toolbar.show(
       rect.left + rect.width / 2,
       y,
       view.editor,
-      sel.toString().trim()
+      sel.toString().trim(),
+      from,
+      to
     );
   }
 }
