@@ -1,137 +1,282 @@
-/* ── Floating toolbar ── */
+/* Writing Annotations — editorial design */
+
+:root {
+  --wa-ink:         #C4923A;
+  --wa-ink-light:   rgba(196, 146, 58, 0.10);
+  --wa-ink-mid:     rgba(196, 146, 58, 0.22);
+  --wa-green:       #5A8A6A;
+  --wa-green-light: rgba(90, 138, 106, 0.10);
+  --wa-red:         #B85C5C;
+  --wa-red-light:   rgba(184, 92, 92, 0.10);
+  --wa-r:           8px;
+}
+
+/* ─── Floating toolbar ─────────────────────────────────────────── */
+
 .wa-floating-toolbar {
   position: fixed;
   z-index: 9999;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 10px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+  border-radius: 100px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.10), 0 8px 28px rgba(0,0,0,0.16);
   display: flex;
-  gap: 2px;
-  padding: 4px;
-  animation: wa-pop 0.12s ease-out;
-}
-@keyframes wa-pop {
-  from { opacity: 0; transform: scale(0.92) translateY(6px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0); }
+  gap: 0;
+  padding: 3px;
+  animation: wa-pop 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Mobile: pin toolbar to bottom so it never fights iOS Cut/Copy/Paste */
-.wa-toolbar-bottom-bar {
-  border-radius: 0 !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-bottom: none !important;
-  border-top: 1px solid var(--background-modifier-border) !important;
-  justify-content: center !important;
-  gap: 0 !important;
-  padding: 6px 0 !important;
-  animation: wa-slide-up 0.18s ease-out !important;
+@keyframes wa-pop {
+  from { opacity: 0; transform: scale(0.86) translateY(5px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
 }
-.wa-toolbar-bottom-bar button {
-  flex: 1;
-  justify-content: center;
-  border-right: 1px solid var(--background-modifier-border);
-  border-radius: 0 !important;
-  padding: 10px 0 !important;
-  font-size: 15px !important;
-  min-height: 44px !important;
-}
-.wa-toolbar-bottom-bar button:last-child { border-right: none; }
-@keyframes wa-slide-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+
 .wa-floating-toolbar button {
   background: transparent;
   border: none;
-  border-radius: 7px;
-  padding: 7px 12px;
+  border-radius: 100px;
+  padding: 6px 14px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-normal);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
   white-space: nowrap;
-  min-height: 38px;
+  min-height: 34px;
+  letter-spacing: 0.01em;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s, color 0.1s;
 }
-.wa-floating-toolbar button:active { background: var(--background-modifier-hover); }
-.wa-toolbar-annotate { color: var(--color-yellow) !important; }
-.wa-toolbar-dismiss  { color: var(--text-faint)  !important; }
 
+.wa-floating-toolbar button:hover,
+.wa-floating-toolbar button:active {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
 
-/* ── Mobile annotation input sheet (bypasses Obsidian Modal entirely) ── */
+.wa-toolbar-annotate {
+  color: var(--wa-ink) !important;
+  font-weight: 700 !important;
+}
+.wa-toolbar-annotate:hover,
+.wa-toolbar-annotate:active {
+  background: var(--wa-ink-light) !important;
+  color: var(--wa-ink) !important;
+}
+
+.wa-toolbar-dismiss {
+  color: var(--text-faint) !important;
+  font-size: 11px !important;
+  padding: 6px 10px !important;
+}
+
+.wa-toolbar-all { color: var(--text-muted) !important; }
+
+/* ─── Annotation input modal ───────────────────────────────────── */
+
+.wa-mobile-modal .modal-content { padding: 18px 20px 20px; }
+
+.wa-modal-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-modal-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-faint);
+  margin-bottom: 13px;
+}
+
+@keyframes wa-shake {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-5px); }
+  75%       { transform: translateX(5px); }
+}
+.wa-shake { animation: wa-shake 0.28s ease; }
+
+/* ── Selected text preview ── */
+.wa-quoted-preview {
+  background: var(--wa-ink-light);
+  border-left: 2px solid var(--wa-ink);
+  padding: 9px 12px;
+  border-radius: 0 var(--wa-r) var(--wa-r) 0;
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.86em;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  max-height: 88px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--wa-ink-mid) transparent;
+}
+.wa-quoted-preview::-webkit-scrollbar       { width: 3px; }
+.wa-quoted-preview::-webkit-scrollbar-track { background: transparent; }
+.wa-quoted-preview::-webkit-scrollbar-thumb { background: var(--wa-ink-mid); border-radius: 2px; }
+
+/* ── Comment textarea ── */
+.wa-comment-input {
+  width: 100%;
+  min-height: 70px;
+  resize: none;
+  overflow: hidden;
+  background: var(--background-primary);
+  border: 1.5px solid var(--background-modifier-border);
+  border-radius: var(--wa-r);
+  padding: 11px 13px;
+  font-family: var(--font-text);
+  font-size: 0.94em;
+  line-height: 1.6;
+  color: var(--text-normal);
+  box-sizing: border-box;
+  margin-bottom: 11px;
+  transition: border-color 0.14s;
+}
+.wa-comment-input:focus {
+  outline: none;
+  border-color: var(--wa-ink);
+}
+.wa-comment-input::placeholder {
+  color: var(--text-faint);
+  font-style: italic;
+}
+.wa-input-sheet .wa-comment-input {
+  width: calc(100% - 36px);
+  margin: 0 18px 12px;
+}
+
+/* ── Buttons ── */
+.wa-btn-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.wa-submit-btn {
+  flex: 1;
+  padding: 11px 16px;
+  background: var(--wa-ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--wa-r);
+  font-size: 0.9em;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+  letter-spacing: 0.03em;
+  transition: opacity 0.13s, transform 0.1s;
+}
+.wa-submit-btn:hover   { opacity: 0.9; }
+.wa-submit-btn:active  { opacity: 0.8; transform: scale(0.98); }
+.wa-submit-btn:disabled { opacity: 0.45; cursor: default; }
+
+.wa-resolve-btn {
+  flex: 1;
+  padding: 11px 16px;
+  background: var(--wa-green-light);
+  color: var(--wa-green);
+  border: 1.5px solid rgba(90, 138, 106, 0.28);
+  border-radius: var(--wa-r);
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+  letter-spacing: 0.02em;
+  transition: background 0.13s, transform 0.1s;
+}
+.wa-resolve-btn:hover  { background: rgba(90, 138, 106, 0.18); }
+.wa-resolve-btn:active { transform: scale(0.98); }
+
+.wa-input-sheet .wa-btn-row {
+  width: calc(100% - 36px);
+  margin: 0 18px 4px;
+}
+
+.wa-hint {
+  font-size: 0.72em;
+  color: var(--text-faint);
+  text-align: center;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+/* ─── Mobile bottom sheet ──────────────────────────────────────── */
+
 .wa-sheet-backdrop {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  animation: wa-fade-in 0.2s ease;
-  transition: opacity 0.22s ease;
+  background: rgba(0,0,0,0.42);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: wa-fade-in 0.18s ease;
 }
 @keyframes wa-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
 .wa-input-sheet {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 0; right: 0; bottom: 0;
   z-index: 9999;
   background: var(--background-primary);
-  border-radius: 20px 20px 0 0;
-  padding: 0 0 env(safe-area-inset-bottom, 8px);
-  box-shadow:
-    0 -2px 0 rgba(255,255,255,0.06),
-    0 -8px 40px rgba(0,0,0,0.5);
+  border-radius: 18px 18px 0 0;
+  padding: 0 0 env(safe-area-inset-bottom, 10px);
+  box-shadow: 0 -1px 0 var(--background-modifier-border),
+              0 -12px 40px rgba(0,0,0,0.30);
   transform: translateY(100%);
-  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-              bottom 0.1s linear;
+  transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.wa-input-sheet--open {
-  transform: translateY(0);
-}
+.wa-input-sheet--open { transform: translateY(0); }
+
 .wa-sheet-handle {
-  width: 40px;
-  height: 5px;
-  background: rgba(255,255,255,0.18);
-  border-radius: 3px;
-  margin: 10px auto 0;
+  width: 36px;
+  height: 4px;
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+  margin: 12px auto 0;
 }
+
 .wa-sheet-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 .wa-sheet-title {
-  font-size: 0.95em;
+  font-size: 10.5px;
   font-weight: 700;
-  color: var(--text-normal);
-  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-faint);
 }
 .wa-sheet-close-btn {
-  background: rgba(255,255,255,0.1);
+  background: var(--background-modifier-hover);
   border: none;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
   color: var(--text-muted);
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   padding: 0;
+  transition: background 0.12s;
 }
-.wa-sheet-close-btn:active { background: rgba(255,255,255,0.18); }
+.wa-sheet-close-btn:active { background: var(--background-modifier-active-hover); }
+
 .wa-sheet-preview-wrap {
   padding: 14px 18px 0;
   position: relative;
@@ -139,256 +284,171 @@
 .wa-sheet-preview-wrap::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 18px;
-  right: 18px;
-  height: 20px;
+  bottom: 0; left: 18px; right: 18px;
+  height: 16px;
   background: linear-gradient(to bottom, transparent, var(--background-primary));
   pointer-events: none;
-  border-radius: 0 0 4px 4px;
 }
 
-/* ── Annotation input modal ── */
-.wa-mobile-modal .modal-content {
-  padding: 16px 18px 20px;
-}
-.wa-modal-content {
-  display: flex;
-  flex-direction: column;
-}
-.wa-modal-title {
-  font-size: 0.95em;
-  font-weight: 700;
-  margin-bottom: 14px;
-  letter-spacing: 0.01em;
-}
-@keyframes wa-shake {
-  0%, 100% { transform: translateX(0); }
-  20%       { transform: translateX(-6px); }
-  60%       { transform: translateX(6px); }
-}
-.wa-shake { animation: wa-shake 0.35s ease; }
+/* ─── Sidebar panel ────────────────────────────────────────────── */
 
-.wa-quoted-preview {
-  background: rgba(255,255,255,0.05);
-  border-left: 3px solid var(--color-yellow);
-  padding: 10px 12px;
-  border-radius: 6px;
-  font-style: italic;
-  color: var(--text-muted);
-  font-size: 0.88em;
-  line-height: 1.55;
-  margin-bottom: 14px;
-  max-height: 110px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.15) transparent;
-}
-.wa-quoted-preview::-webkit-scrollbar {
-  width: 3px;
-}
-.wa-quoted-preview::-webkit-scrollbar-track {
-  background: transparent;
-}
-.wa-quoted-preview::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
-  border-radius: 2px;
-}
-.wa-comment-input {
-  width: 100%;
-  min-height: 60px;
-  resize: none;
-  overflow: hidden;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-family: var(--font-text);
-  font-size: 0.95em;
-  color: var(--text-normal);
-  box-sizing: border-box;
-  margin-bottom: 12px;
-}
-.wa-comment-input:focus {
-  outline: none;
-  border-color: rgba(255,255,255,0.28);
-  background: rgba(255,255,255,0.09);
-}
-/* Inside the mobile sheet — inset from edges */
-.wa-input-sheet .wa-comment-input {
-  width: calc(100% - 36px);
-  margin: 0 18px 12px;
-}
-.wa-btn-row {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-}
-.wa-submit-btn {
-  flex: 1;
-  padding: 13px;
-  background: var(--color-accent);
-  color: var(--text-on-accent);
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95em;
-  font-weight: 700;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  min-height: 48px;
-  letter-spacing: 0.02em;
-  transition: opacity 0.15s ease, transform 0.1s ease;
-}
-.wa-submit-btn:active {
-  opacity: 0.85;
-  transform: scale(0.98);
-}
-.wa-resolve-btn {
-  flex: 1;
-  padding: 13px;
-  background: rgba(152, 195, 121, 0.12);
-  color: #98c379;
-  border: 1.5px solid rgba(152, 195, 121, 0.28);
-  border-radius: 12px;
-  font-size: 0.95em;
-  font-weight: 700;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  min-height: 48px;
-  letter-spacing: 0.02em;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-.wa-resolve-btn:active {
-  background: rgba(152, 195, 121, 0.26);
-  transform: scale(0.98);
-}
-/* Inside the mobile sheet — inset from edges */
-.wa-input-sheet .wa-btn-row {
-  width: calc(100% - 36px);
-  margin: 0 18px 4px;
-}
-.wa-hint {
-  font-size: 0.76em;
-  color: var(--text-faint);
-  text-align: center;
-  margin-top: 7px;
-}
-
-/* ── Panel / modal list ── */
 .wa-sidebar-container {
-  padding: 12px;
+  padding: 14px 12px;
   overflow-y: auto;
   height: 100%;
   box-sizing: border-box;
 }
+
 .wa-panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 14px;
-  padding-bottom: 10px;
+  padding-bottom: 11px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
+
 .wa-panel-title {
+  font-size: 10.5px;
   font-weight: 700;
-  font-size: 0.95em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
 }
+
 .wa-copy-btn {
-  background: var(--background-modifier-hover);
-  border: none;
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  padding: 6px 11px;
-  font-size: 0.82em;
+  padding: 5px 10px;
+  font-size: 0.77em;
   cursor: pointer;
-  color: var(--text-normal);
+  color: var(--text-muted);
   touch-action: manipulation;
-  min-height: 34px;
+  min-height: 28px;
+  transition: background 0.12s, color 0.12s;
 }
+.wa-copy-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* ── Annotation card ── */
 .wa-annotation-item {
   border: 1px solid var(--background-modifier-border);
-  border-radius: 9px;
-  padding: 12px;
-  margin-bottom: 10px;
+  border-left: 3px solid var(--wa-ink);
+  border-radius: var(--wa-r);
+  padding: 11px 12px;
+  margin-bottom: 8px;
   background: var(--background-secondary);
+  transition: background 0.12s;
 }
+.wa-annotation-item:hover { background: var(--background-modifier-hover); }
+
 .wa-item-text {
-  font-size: 0.84em;
+  font-size: 0.81em;
   color: var(--text-muted);
   font-style: italic;
-  border-left: 3px solid var(--color-yellow);
-  padding-left: 8px;
-  margin-bottom: 6px;
-  line-height: 1.4;
+  margin-bottom: 5px;
+  line-height: 1.5;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
 .wa-item-comment {
   font-size: 0.9em;
-  font-weight: 500;
   color: var(--text-normal);
-  margin-bottom: 10px;
-  line-height: 1.5;
+  margin-bottom: 9px;
+  line-height: 1.55;
 }
-.wa-item-actions {
-  display: flex;
-  gap: 6px;
-}
+
+.wa-item-actions { display: flex; gap: 5px; }
+
 .wa-item-actions button {
-  font-size: 0.78em;
-  padding: 5px 12px;
+  font-size: 0.75em;
+  padding: 4px 10px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 5px;
-  background: var(--background-primary);
-  color: var(--text-normal);
+  background: transparent;
+  color: var(--text-muted);
   cursor: pointer;
   touch-action: manipulation;
-  min-height: 32px;
+  min-height: 28px;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
 }
+.wa-item-actions button:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
 .wa-item-actions button:active { opacity: 0.7; }
-.wa-done-btn       { color: var(--color-green) !important; }
-.wa-copy-one-btn   { min-width: 36px; justify-content: center; }
-.wa-delete-btn     { color: var(--color-red, #e06c75) !important; min-width: 36px; }
+
+.wa-done-btn {
+  color: var(--wa-green) !important;
+  border-color: rgba(90, 138, 106, 0.25) !important;
+}
+.wa-done-btn:hover {
+  background: var(--wa-green-light) !important;
+  color: var(--wa-green) !important;
+}
+
+.wa-copy-one-btn { min-width: 30px; padding: 4px 7px !important; text-align: center; }
+
+.wa-delete-btn {
+  color: var(--wa-red) !important;
+  border-color: rgba(184, 92, 92, 0.2) !important;
+  min-width: 30px;
+  padding: 4px 7px !important;
+}
+.wa-delete-btn:hover {
+  background: var(--wa-red-light) !important;
+  color: var(--wa-red) !important;
+}
+
 .wa-empty {
-  color: var(--text-muted);
+  color: var(--text-faint);
   text-align: center;
-  padding: 28px 12px;
-  font-size: 0.9em;
-  line-height: 1.6;
+  padding: 32px 16px;
+  font-size: 0.87em;
+  line-height: 1.75;
   white-space: pre-line;
 }
 
-/* ── Reading view: annotated highlight ── */
+/* ─── Reading view ─────────────────────────────────────────────── */
+
 .wa-annotated-mark {
-  border-bottom: 2px solid var(--color-orange);
-  border-radius: 2px;
+  background: var(--wa-ink-light);
+  border-bottom: 1.5px solid var(--wa-ink);
+  border-radius: 1px;
 }
 
-/* ── Reading view: persistent inline annotation note ── */
 .wa-inline-note {
   display: block;
-  margin: 5px 0 12px 0;
-  padding: 8px 12px;
-  background: rgba(255, 200, 0, 0.06);
-  border-left: 3px solid var(--color-yellow);
-  border-radius: 0 7px 7px 0;
+  margin: 4px 0 14px;
+  padding: 8px 12px 8px 14px;
+  background: var(--wa-ink-light);
+  border-left: 2px solid var(--wa-ink);
+  border-radius: 0 var(--wa-r) var(--wa-r) 0;
   color: var(--text-muted);
   font-size: 0.84em;
   font-style: italic;
-  line-height: 1.55;
+  line-height: 1.6;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s ease;
-  animation: wa-note-in 0.18s ease-out both;
+  transition: background 0.15s, color 0.14s;
+  animation: wa-note-in 0.16s ease-out both;
 }
 .wa-inline-note:hover,
-.wa-inline-note:active { background: rgba(255, 200, 0, 0.14); color: var(--text-normal); }
+.wa-inline-note:active {
+  background: var(--wa-ink-mid);
+  color: var(--text-normal);
+}
 @keyframes wa-note-in {
-  from { opacity: 0; transform: translateY(-3px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes wa-slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }

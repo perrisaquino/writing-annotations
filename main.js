@@ -526,6 +526,13 @@ class WritingAnnotationsPlugin extends Plugin {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!view?.file) return;
 
+    // Capture cursor positions BEFORE opening the modal.
+    // The modal steals editor focus which clears the active selection —
+    // replaceSelection() would then fire into nothing and lose the user's note.
+    // replaceRange() with saved positions works regardless of focus state.
+    const from = editor.getCursor('from');
+    const to   = editor.getCursor('to');
+
     // ==highlight== only works on a single line in Obsidian.
     // For multiline / long selections, anchor to the first sentence/line.
     const anchor    = textAnchor(selection);
@@ -533,13 +540,12 @@ class WritingAnnotationsPlugin extends Plugin {
 
     const onSubmit = async (note) => {
       if (truncated) {
-        // Highlight just the anchor at the start; leave the rest of the passage unhighlighted
         const anchorRaw = anchor.endsWith('…') ? anchor.slice(0, -1) : anchor;
         const rest = selection.trim().slice(anchorRaw.length);
-        editor.replaceSelection(`==${anchor}==${rest}`);
-        new Notice('Annotation saved. (First sentence highlighted — full passage spans multiple lines.)');
+        editor.replaceRange(`==${anchor}==${rest}`, from, to);
+        new Notice('Annotation saved.');
       } else {
-        editor.replaceSelection(`==${anchor}==`);
+        editor.replaceRange(`==${anchor}==`, from, to);
         new Notice('Annotation saved.');
       }
       await addAnnotation(this.app, view.file, anchor, note);
