@@ -171,7 +171,7 @@ class AnnotationInputModal extends Modal {
 
       textarea.addEventListener('input', () => {
         textarea.style.height = 'auto';
-        textarea.style.height = `${Math.min(textarea.scrollHeight, 280)}px`;
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
       });
 
       const submit = () => {
