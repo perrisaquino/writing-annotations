@@ -567,7 +567,7 @@ class WritingAnnotationsPlugin extends Plugin {
     const all     = await getAnnotations(this.app, mdView.file);
     const content = mdView.editor.getValue();
 
-    // ── Reconcile: auto-clean ghost annotations whose == was manually deleted ──
+    // Reconcile: drop any whose == marker was manually deleted
     const live    = all.filter(a => content.includes(`==${a.text}==`));
     const orphans = all.filter(a => !content.includes(`==${a.text}==`));
     if (orphans.length) {
@@ -576,81 +576,102 @@ class WritingAnnotationsPlugin extends Plugin {
 
     const filename = mdView.file.name;
 
-    // ── Header ──────────────────────────────────
+    // ── Header ──
     const header = container.createEl('div', { cls: 'wa-panel-header' });
     header.createEl('span', {
       cls:  'wa-panel-title',
       text: `${live.length} annotation${live.length !== 1 ? 's' : ''}`
     });
 
-    const copyAllBtn = header.createEl('button', { cls: 'wa-copy-btn', text: '📋 Copy all' });
-    copyAllBtn.addEventListener('click', async () => {
-      if (!live.length) { new Notice('No annotations to copy.'); return; }
-      await navigator.clipboard.writeText(buildLLMExport(filename, live));
-      copyAllBtn.setText('✓ Copied!');
-      setTimeout(() => copyAllBtn.setText('📋 Copy all'), 2500);
-    });
+    if (live.length) {
+      const exportBtn = header.createEl('button', { cls: 'wa-export-btn', text: 'Export' });
+      exportBtn.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(buildLLMExport(filename, live));
+        exportBtn.setText('✓ Copied');
+        setTimeout(() => exportBtn.setText('Export'), 2500);
+      });
+    }
 
     if (!live.length) {
       container.createEl('div', {
         cls:  'wa-empty',
-        text: 'No annotations yet.\nSelect text and tap 🖊 to add one.'
+        text: 'No annotations yet.\nSelect any text to add one.'
       });
       return;
     }
 
-    // ── Cards ────────────────────────────────────
+    // ── Cards ──
     live.forEach((ann) => {
-      const item = container.createEl('div', { cls: 'wa-annotation-item' });
+      const card = container.createEl('div', { cls: 'wa-card' });
 
-      item.createEl('div', { cls: 'wa-item-text',    text: `"${ann.text}"` });
-      item.createEl('div', { cls: 'wa-item-comment', text: ann.note });
+      // Highlighted passage
+      card.createEl('div', { cls: 'wa-card-quote', text: ann.text });
 
-      const actions = item.createEl('div', { cls: 'wa-item-actions' });
+      // User's note
+      if (ann.note) {
+        card.createEl('div', { cls: 'wa-card-note', text: ann.note });
+      }
 
-      // ↗ Jump to
-      const jumpBtn = actions.createEl('button', { text: '↗ Jump to' });
+      if (ann.created) {
+        card.createEl('div', { cls: 'wa-card-date', text: ann.created });
+      }
+
+      // ── Actions ──
+      const actions = card.createEl('div', { cls: 'wa-card-actions' });
+
+      // Edit — opens the annotation modal to change the note
+      const editBtn = actions.createEl('button', { cls: 'wa-btn-edit', text: 'Edit' });
+      editBtn.addEventListener('click', () => {
+        this._openAnnotationInput(
+          ann.text,
+          async (newNote) => {
+            await updateAnnotation(this.app, mdView.file, ann.text, newNote);
+            new Notice('Updated.');
+            this._refreshSidebar();
+            await this.renderAnnotationList(container, mdView, onClose);
+          },
+          ann.note,
+          async () => {
+            await atomicRemove(this.app, mdView.file, ann.text);
+            new Notice('Resolved.');
+            this._refreshSidebar();
+            await this.renderAnnotationList(container, mdView, onClose);
+          }
+        );
+      });
+
+      // Jump — navigate to the highlight in the editor
+      const jumpBtn = actions.createEl('button', { cls: 'wa-btn-jump', text: '↗ Jump' });
       jumpBtn.addEventListener('click', () => {
-        const idx = mdView.editor.getValue().indexOf(`==${ann.text}==`);
-        if (idx === -1) { new Notice('Text not found.'); return; }
-        if (onClose) onClose();
-        setTimeout(() => {
-          this.app.workspace.setActiveLeaf(mdView.leaf, { focus: true });
-          const pos = mdView.editor.offsetToPos(idx);
+        const current = mdView.editor.getValue();
+        const idx = current.indexOf(`==${ann.text}==`);
+        if (idx === -1) { new Notice('Highlight not found.'); return; }
+
+        const pos = mdView.editor.offsetToPos(idx);
+
+        if (onClose) {
+          // Mobile: close modal first, then navigate after layout settles
+          onClose();
+          setTimeout(() => {
+            this.app.workspace.revealLeaf(mdView.leaf);
+            this.app.workspace.setActiveLeaf(mdView.leaf, { focus: true });
+            mdView.editor.setCursor(pos);
+            mdView.editor.scrollIntoView({ from: pos, to: pos }, true);
+          }, 350);
+        } else {
           mdView.editor.setCursor(pos);
           mdView.editor.scrollIntoView({ from: pos, to: pos }, true);
-        }, onClose ? 250 : 0);
+        }
       });
 
-      // 📋 Copy this annotation
-      const copyOneBtn = actions.createEl('button', { cls: 'wa-copy-one-btn', text: '📋' });
-      copyOneBtn.setAttribute('aria-label', 'Copy this annotation');
-      copyOneBtn.addEventListener('click', async () => {
-        await navigator.clipboard.writeText(buildSingleExport(ann));
-        copyOneBtn.setText('✓');
-        setTimeout(() => copyOneBtn.setText('📋'), 1500);
-      });
-
-      // ✓ Done (atomic: remove == from body + remove from frontmatter)
-      const doneBtn = actions.createEl('button', { cls: 'wa-done-btn', text: '✓ Done' });
-      doneBtn.addEventListener('click', async () => {
-        doneBtn.disabled = true;
-        doneBtn.setText('…');
-        await atomicRemove(this.app, mdView.file, ann.text);
-        new Notice('Done.');
-        this._refreshSidebar();
-        if (onClose) onClose();
-      });
-
-      // 🗑 Delete (force-remove from panel even if highlight already gone)
-      const deleteBtn = actions.createEl('button', { cls: 'wa-delete-btn', text: '🗑' });
-      deleteBtn.setAttribute('aria-label', 'Delete annotation');
-      deleteBtn.addEventListener('click', async () => {
-        deleteBtn.disabled = true;
-        // atomicRemove handles missing == gracefully (skips body mod if not found)
+      // Remove — strips the ==highlight== and removes from frontmatter
+      const removeBtn = actions.createEl('button', { cls: 'wa-btn-remove', text: 'Remove' });
+      removeBtn.addEventListener('click', async () => {
+        removeBtn.disabled = true;
+        removeBtn.textContent = '…';
         await atomicRemove(this.app, mdView.file, ann.text);
         this._refreshSidebar();
-        if (onClose) onClose();
+        await this.renderAnnotationList(container, mdView, onClose);
       });
     });
   }
